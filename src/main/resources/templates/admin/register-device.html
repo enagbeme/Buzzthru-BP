@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Register Device</title>
+    <script th:src="@{/app.js}"></script>
+    <link rel="stylesheet" th:href="@{/styles.css}"/>
+</head>
+<body>
+<div class="container">
+    <div class="nav">
+        <div class="brand">
+            <div class="brand-title">Register This Computer</div>
+            <div class="brand-sub">Bind this device to a location</div>
+        </div>
+        <div class="row">
+            <button id="themeToggle" class="btn btn-ghost" type="button" onclick="toggleTheme()">Dark theme</button>
+            <a class="btn btn-ghost" th:href="@{/admin}">Back</a>
+        </div>
+    </div>
+
+    <div style="height: 16px"></div>
+
+    <div class="grid" style="max-width: 700px; margin: 0 auto;">
+        <div th:if="${message}" class="alert" th:text="${message}"></div>
+
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <div class="h1">Device</div>
+                    <p class="p">Once registered, employees cannot change the location on this computer.</p>
+                </div>
+                <span class="badge"><span class="badge-dot"></span>Store PC</span>
+            </div>
+
+            <div class="kv">
+                <div class="k">Device UUID</div>
+                <div class="v mono" th:text="${deviceUuid}"></div>
+            </div>
+
+            <div style="height: 10px"></div>
+            <form class="form" method="post" th:action="@{/admin/register-device}">
+                <div class="field">
+                    <label>Computer name</label>
+                    <input name="computerName" placeholder="Optional (e.g., Laundry 1 Front PC)"/>
+                </div>
+                <div class="field">
+                    <label>Location</label>
+                    <select name="locationId">
+                        <option th:each="l : ${locations}" th:value="${l.id}" th:text="${l.name}"></option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" type="submit">Register</button>
+            </form>
+
+            <div class="footer">If you replace a store computer, just re-register the new one here.</div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

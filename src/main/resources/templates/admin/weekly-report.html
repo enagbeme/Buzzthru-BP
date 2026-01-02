@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Buzzthru/BP - Weekly Hours Report</title>
+    <script th:src="@{/app.js}"></script>
+    <link rel="stylesheet" th:href="@{/styles.css}"/>
+</head>
+<body>
+<div class="container">
+    <div class="nav">
+        <div class="brand">
+            <div class="brand-title">Buzzthru/BP</div>
+            <div class="brand-sub" th:text="'Weekly Hours Report | Week: ' + ${weekStart} + ' to ' + ${weekEnd}"></div>
+        </div>
+        <div class="row">
+            <button id="themeToggle" class="btn btn-ghost" type="button" onclick="toggleTheme()">Dark theme</button>
+            <a class="btn" th:href="@{/admin/reports/weekly/pdf(weekStart=${weekStart})}">Download PDF</a>
+            <a class="btn" th:href="@{/admin/reports/weekly/csv(weekStart=${weekStart})}">Download CSV</a>
+            <a class="btn btn-ghost" th:href="@{/admin}">Back to Dashboard</a>
+            <form method="post" th:action="@{/admin/logout}" style="margin:0">
+                <button class="btn btn-danger" type="submit">Logout</button>
+            </form>
+        </div>
+    </div>
+
+    <div style="height: 16px"></div>
+
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <div class="h1">Totals by Employee</div>
+                <p class="p">Totals update automatically. Completed total excludes open shifts.</p>
+            </div>
+            <span class="badge"><span class="badge-dot"></span>Weekly</span>
+        </div>
+
+        <form class="form" method="get" th:action="@{/admin/reports/weekly}">
+            <div class="field">
+                <label>Week start (Monday)</label>
+                <input type="date" name="weekStart" th:value="${weekStart}"/>
+            </div>
+            <button class="btn" type="submit">Load Week</button>
+        </form>
+
+        <div style="height: 12px"></div>
+
+        <table class="table" id="weeklyTotalsTable">
+            <thead>
+            <tr>
+                <th>Employee</th>
+                <th>Completed (H:MM)</th>
+                <th>Live incl. open (H:MM)</th>
+            </tr>
+            </thead>
+            <tbody id="weeklyTotalsBody"></tbody>
+        </table>
+    </div>
+
+    <div style="height: 16px"></div>
+
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <div class="h1">Shift Details</div>
+                <p class="p">Day, clock-in/out, and hours worked for each shift.</p>
+            </div>
+            <span class="badge"><span class="badge-dot"></span>Live</span>
+        </div>
+
+        <table class="table" id="weeklyShiftsTable">
+            <thead>
+            <tr>
+                <th>Employee</th>
+                <th>Day</th>
+                <th>Clock in</th>
+                <th>Clock out</th>
+                <th>Hours worked</th>
+                <th>Status</th>
+            </tr>
+            </thead>
+            <tbody id="weeklyShiftsBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    const weekStart = /*[[${weekStart}]]*/ '';
+
+    function formatHms(totalSeconds) {
+        const s = Math.max(0, Math.floor(totalSeconds));
+        const h = Math.floor(s / 3600);
+        const m = Math.floor((s % 3600) / 60);
+        const r = s % 60;
+        return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`;
+    }
+
+    function formatTime(epochMillis) {
+        if (epochMillis === null || epochMillis === undefined) return '-';
+        try { return new Date(epochMillis).toLocaleString(); } catch (e) { return String(epochMillis); }
+    }
+
+    function renderTotals(totals) {
+        const body = document.getElementById('weeklyTotalsBody');
+        body.innerHTML = '';
+
+        if (!totals || totals.length === 0) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td class="small" colspan="3">No hours found for this week.</td>`;
+            body.appendChild(tr);
+            return;
+        }
+
+        totals.forEach((r) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${r.employeeName}</td>
+                <td class="mono">${r.completedTotalFormatted}</td>
+                <td class="mono">${r.liveTotalFormatted}</td>
+            `;
+            body.appendChild(tr);
+        });
+    }
+
+    function renderShifts(shifts) {
+        const body = document.getElementById('weeklyShiftsBody');
+        body.innerHTML = '';
+
+        if (!shifts || shifts.length === 0) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td class="small" colspan="6">No shifts found for this week.</td>`;
+            body.appendChild(tr);
+            return;
+        }
+
+        shifts.forEach((s) => {
+            const tr = document.createElement('tr');
+            const status = s.completed ? 'COMPLETED' : 'OPEN';
+            tr.innerHTML = `
+                <td>${s.employeeName}</td>
+                <td class="mono">${s.day}</td>
+                <td class="mono">${formatTime(s.clockInEpochMillis)}</td>
+                <td class="mono">${formatTime(s.clockOutEpochMillis)}</td>
+                <td class="mono">${formatHms(s.workedSeconds)}</td>
+                <td><span class="badge ${s.completed ? 'badge-success' : 'badge-warning'}"><span class="badge-dot"></span>${status}</span></td>
+            `;
+            body.appendChild(tr);
+        });
+    }
+
+    async function refreshWeekly() {
+        const url = `/admin/reports/weekly/data?weekStart=${encodeURIComponent(weekStart)}`;
+        const res = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' } });
+        if (!res.ok) {
+            return;
+        }
+        const data = await res.json();
+        renderTotals(data.totals);
+        renderShifts(data.shifts);
+    }
+
+    refreshWeekly();
+    setInterval(refreshWeekly, 5000);
+    /*]]>*/
+</script>
+</body>
+</html>

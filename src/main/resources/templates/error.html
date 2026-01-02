@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Error</title>
+    <script th:src="@{/app.js}"></script>
+    <link rel="stylesheet" th:href="@{/styles.css}"/>
+</head>
+<body>
+<div class="container">
+    <div class="nav">
+        <div class="brand">
+            <div class="brand-title">Something went wrong</div>
+            <div class="brand-sub">Please try again or contact your administrator</div>
+        </div>
+        <div class="row">
+            <button id="themeToggle" class="btn btn-ghost" type="button" onclick="toggleTheme()">Dark theme</button>
+            <a class="btn btn-ghost" th:href="@{/}">Home</a>
+            <a class="btn" th:href="@{/clock}">Time Clock</a>
+        </div>
+    </div>
+
+    <div style="height: 16px"></div>
+
+    <div class="grid" style="max-width: 900px; margin: 0 auto;">
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <div class="h1" th:text="${status} + ' - ' + ${error}"></div>
+                    <p class="p" th:text="${message}"></p>
+                </div>
+                <span class="badge badge-danger"><span class="badge-dot"></span>Error</span>
+            </div>
+
+            <div class="kv">
+                <div class="k">Path</div>
+                <div class="v mono" th:text="${path}"></div>
+            </div>
+            <div class="kv" th:if="${timestamp}">
+                <div class="k">Time</div>
+                <div class="v mono" th:text="${timestamp}"></div>
+            </div>
+
+            <div class="footer">If this keeps happening, check the server logs for details.</div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

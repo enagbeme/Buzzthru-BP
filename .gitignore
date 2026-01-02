@@ -1,0 +1,19 @@
+target/
+*.log
+.DS_Store
+.idea/
+.vscode/
+*.iml
+
+# Local env files
+.env
+.env.*
+
+# OS
+Thumbs.db
+
+# Maven wrapper (if added later)
+.mvn/
+
+# IntelliJ out
+out/

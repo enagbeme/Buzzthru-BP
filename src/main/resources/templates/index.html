@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Buzzthru/BP</title>
+    <script th:src="@{/app.js}"></script>
+    <link rel="stylesheet" th:href="@{/styles.css}"/>
+</head>
+<body>
+<div class="container">
+    <div class="nav">
+        <div class="brand">
+            <div class="brand-title">Buzzthru/BP</div>
+            <div class="brand-sub">Multi-location time clock</div>
+        </div>
+        <div class="row">
+            <button id="themeToggle" class="btn btn-ghost" type="button" onclick="toggleTheme()">Dark theme</button>
+            <a class="btn btn-ghost" th:href="@{/clock}">Time Clock</a>
+            <a class="btn btn-primary" th:href="@{/admin}">Admin</a>
+        </div>
+    </div>
+
+    <div style="height: 16px"></div>
+
+    <div class="grid grid-2">
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <div class="h1">Clock In / Out</div>
+                    <p class="p">Employees use a 4–6 digit PIN. Time is calculated using server time only.</p>
+                </div>
+                <span class="badge badge-success"><span class="badge-dot"></span>Ready</span>
+            </div>
+            <div class="row">
+                <a class="btn btn-primary" th:href="@{/clock}">Open Time Clock</a>
+            </div>
+            <div class="footer">Tip: Each store computer should be registered to a location from the Admin panel.</div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <div class="h1">Admin Dashboard</div>
+                    <p class="p">Manage locations, employees, device registration, and view open shifts.</p>
+                </div>
+                <span class="badge"><span class="badge-dot"></span>Secure</span>
+            </div>
+            <div class="row">
+                <a class="btn" th:href="@{/admin/login}">Admin Login</a>
+                <a class="btn btn-primary" th:href="@{/admin}">Dashboard</a>
+            </div>
+            <div class="footer">If you just started the app, the initial admin PIN is printed in the console.</div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

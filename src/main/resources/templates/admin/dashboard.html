@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Buzzthru/BP - Admin Dashboard</title>
+    <script th:src="@{/app.js}"></script>
+    <link rel="stylesheet" th:href="@{/styles.css}"/>
+</head>
+<body>
+<div class="container">
+    <div class="nav">
+        <div class="brand">
+            <div class="brand-title">Buzzthru/BP</div>
+            <div class="brand-sub" th:text="'Admin Dashboard | Admin ID: ' + ${adminId}"></div>
+        </div>
+        <div class="row">
+            <div class="clock-wrap">
+                <div id="serverTime" class="clock-big">--:--:--</div>
+                <div class="clock-sub">Server time</div>
+            </div>
+            <button id="themeToggle" class="btn btn-ghost" type="button" onclick="toggleTheme()">Dark theme</button>
+            <a class="btn" th:if="${deviceRegistered == false}" th:href="@{/admin/register-device}">Register This Computer</a>
+            <button class="btn" th:if="${deviceRegistered == true}" type="button" disabled>Registered</button>
+            <a class="btn btn-ghost" th:href="@{/admin/time-entries}">Time Entries</a>
+            <a class="btn btn-ghost" th:href="@{/admin/reports/range}">Date Range Report</a>
+            <form method="post" th:action="@{/admin/logout}" style="margin:0">
+                <button class="btn btn-danger" type="submit">Logout</button>
+            </form>
+        </div>
+    </div>
+
+    <div style="height: 16px"></div>
+
+    <div th:if="${message}" class="alert" th:text="${message}"></div>
+
+    <div style="height: 16px"></div>
+
+    <div class="tabs" id="adminTabs">
+        <button class="tab-btn" type="button" data-tab="open-shifts">Open Shifts</button>
+        <button class="tab-btn" type="button" data-tab="weekly-hours">Weekly Hours</button>
+        <button class="tab-btn" type="button" data-tab="employees">Employees</button>
+        <button class="tab-btn" type="button" data-tab="create">Create</button>
+    </div>
+
+    <div style="height: 16px"></div>
+
+    <div class="tab-panel" data-panel="open-shifts">
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <div class="h1">Live Open Shifts</div>
+                    <p class="p">Current clocked-in employees per location.</p>
+                </div>
+                <span class="badge"><span class="badge-dot"></span>Live</span>
+            </div>
+            <div style="overflow:auto;">
+                <table class="table" id="openShiftsTable">
+                    <thead>
+                    <tr>
+                        <th th:each="loc : ${locations}" th:text="${loc.name}"></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td th:each="loc : ${locations}" style="vertical-align: top; min-width: 260px;">
+                            <div th:if="${#lists.isEmpty(openByLocation[loc.id])}" class="small">No one clocked in</div>
+                            <table th:if="${!#lists.isEmpty(openByLocation[loc.id])}" class="table">
+                                <thead>
+                                <tr>
+                                    <th>Employee</th>
+                                    <th>Clock-in</th>
+                                    <th>Running</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr th:each="t : ${openByLocation[loc.id]}">
+                                    <td th:text="${t.employee.fullName}"></td>
+                                    <td class="mono" th:text="${t.clockInTime}"></td>
+                                    <td class="mono" th:attr="data-clock-in-epoch=${t.clockInTime.toEpochMilli()}">00:00:00</td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-panel" data-panel="weekly-hours">
+        <div class="grid grid-2">
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <div class="h1">Weekly Hours (Live)</div>
+                        <p class="p" th:text="'Week starting: ' + ${weekStart}"></p>
+                    </div>
+                    <div class="row">
+                        <a class="btn" th:href="@{/admin/reports/weekly/pdf(weekStart=${weekStart})}">PDF</a>
+                        <a class="btn" th:href="@{/admin/reports/weekly/csv(weekStart=${weekStart})}">CSV</a>
+                        <a class="btn btn-ghost" th:href="@{/admin/reports/weekly(weekStart=${weekStart})}">Open Full Report</a>
+                        <a class="btn btn-ghost" th:href="@{/admin/reports/range}">Date Range</a>
+                        <span class="badge"><span class="badge-dot"></span>Auto</span>
+                    </div>
+                </div>
+
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>Employee</th>
+                        <th>Completed (H:MM)</th>
+                        <th>Live incl. open (H:MM)</th>
+                    </tr>
+                    </thead>
+                    <tbody id="dashWeeklyTotalsBody"></tbody>
+                </table>
+            </div>
+
+            <div class="card" style="grid-column: 1 / -1;">
+                <div class="card-header">
+                    <div>
+                        <div class="h1">Shift Details (Live)</div>
+                        <p class="p">Day, clock-in, clock-out, and hours worked.</p>
+                    </div>
+                    <span class="badge"><span class="badge-dot"></span>Live</span>
+                </div>
+
+                <div style="overflow: auto; max-height: 520px;">
+                    <table class="table">
+                        <thead>
+                        <tr>
+                            <th style="min-width: 180px;">Employee</th>
+                            <th style="min-width: 110px;">Day</th>
+                            <th style="min-width: 190px;">Clock in</th>
+                            <th style="min-width: 190px;">Clock out</th>
+                            <th style="min-width: 110px;">Hours</th>
+                            <th style="min-width: 110px;">Status</th>
+                        </tr>
+                        </thead>
+                        <tbody id="dashWeeklyShiftsBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-panel" data-panel="employees">
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <div class="h1">Employees</div>
+                    <p class="p">Reset PINs or activate/deactivate employees.</p>
+                </div>
+            </div>
+
+            <div class="grid" style="margin-bottom: 12px;">
+                <div class="grid grid-2">
+                    <div class="field">
+                        <label>Search</label>
+                        <input id="employeeSearch" placeholder="Search by name, ID, role, status..." />
+                    </div>
+                    <div class="field">
+                        <label>Status</label>
+                        <select id="employeeStatusFilter">
+                            <option value="all">All</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Role</th>
+                    <th>Active</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="e : ${employees}" class="employee-row" th:attr="data-active=${e.active}">
+                    <td class="mono" th:text="${e.id}"></td>
+                    <td th:text="${e.fullName}"></td>
+                    <td th:text="${e.role}"></td>
+                    <td>
+                        <span class="badge" th:classappend="${e.active} ? ' badge-success' : ' badge-danger'">
+                            <span class="badge-dot"></span>
+                            <span th:text="${e.active} ? 'Active' : 'Inactive'"></span>
+                        </span>
+                    </td>
+                    <td>
+                        <div class="row">
+                            <form method="post" th:action="@{/admin/employees/reset-pin}" style="margin:0">
+                                <input type="hidden" name="employeeId" th:value="${e.id}"/>
+                                <button class="btn" type="submit">Reset PIN</button>
+                            </form>
+                            <form method="post" th:action="@{/admin/employees/toggle-active}" style="margin:0">
+                                <input type="hidden" name="employeeId" th:value="${e.id}"/>
+                                <button class="btn" type="submit" th:text="${e.active ? 'Deactivate' : 'Activate'}"></button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="tab-panel" data-panel="create">
+        <div class="grid grid-2">
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <div class="h1">Create Location</div>
+                        <p class="p">Add a store location.</p>
+                    </div>
+                </div>
+                <form class="form" method="post" th:action="@{/admin/locations/create}">
+                    <div class="field">
+                        <label>Name</label>
+                        <input name="name" placeholder="Laundry 1"/>
+                    </div>
+                    <div class="field">
+                        <label>Type</label>
+                        <select name="type">
+                            <option value="LAUNDRY">LAUNDRY</option>
+                            <option value="GAS_STATION">GAS_STATION</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label>Address</label>
+                        <input name="address" placeholder="Optional"/>
+                    </div>
+                    <button class="btn" type="submit">Create</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <div class="h1">Create Employee</div>
+                        <p class="p">A new PIN will be generated automatically.</p>
+                    </div>
+                </div>
+                <form class="form" method="post" th:action="@{/admin/employees/create}">
+                    <div class="field">
+                        <label>Full name</label>
+                        <input name="fullName" placeholder="Employee name"/>
+                    </div>
+                    <div class="field">
+                        <label>Role</label>
+                        <select name="role">
+                            <option value="EMPLOYEE">EMPLOYEE</option>
+                            <option value="SUPER_ADMIN">SUPER_ADMIN</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" type="submit">Create (show PIN)</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    startLiveClock(/*[[${serverEpochMillis}]]*/ 0);
+    const dashWeekStart = /*[[${weekStart}]]*/ '';
+
+    function setActiveAdminTab(tab) {
+        const buttons = document.querySelectorAll('#adminTabs .tab-btn');
+        const panels = document.querySelectorAll('.tab-panel');
+
+        buttons.forEach((b) => {
+            b.classList.toggle('active', b.getAttribute('data-tab') === tab);
+        });
+        panels.forEach((p) => {
+            p.classList.toggle('active', p.getAttribute('data-panel') === tab);
+        });
+
+        try { localStorage.setItem('adminTab', tab); } catch (e) {}
+    }
+
+    (function initAdminTabs() {
+        const saved = (() => { try { return localStorage.getItem('adminTab'); } catch (e) { return null; } })();
+        const defaultTab = saved || 'open-shifts';
+        setActiveAdminTab(defaultTab);
+
+        document.querySelectorAll('#adminTabs .tab-btn').forEach((btn) => {
+            btn.addEventListener('click', () => setActiveAdminTab(btn.getAttribute('data-tab')));
+        });
+    })();
+
+    function normalizeText(s) {
+        return String(s || '').toLowerCase().trim();
+    }
+
+    function applyEmployeeFilters() {
+        const q = normalizeText(document.getElementById('employeeSearch')?.value);
+        const status = (document.getElementById('employeeStatusFilter')?.value || 'all').toLowerCase();
+        const rows = document.querySelectorAll('tr.employee-row');
+
+        rows.forEach((row) => {
+            const activeAttr = String(row.getAttribute('data-active') || '').toLowerCase();
+            const isActive = activeAttr === 'true';
+
+            const statusOk = (status === 'all') || (status === 'active' && isActive) || (status === 'inactive' && !isActive);
+            const text = normalizeText(row.innerText);
+            const textOk = !q || text.includes(q);
+
+            row.style.display = (statusOk && textOk) ? '' : 'none';
+        });
+    }
+
+    (function initEmployeeFilters() {
+        const search = document.getElementById('employeeSearch');
+        const status = document.getElementById('employeeStatusFilter');
+        if (search) search.addEventListener('input', applyEmployeeFilters);
+        if (status) status.addEventListener('change', applyEmployeeFilters);
+    })();
+
+    async function refreshOpenShifts() {
+        const table = document.getElementById('openShiftsTable');
+        if (!table) return;
+
+        try {
+            const res = await fetch('/admin/open-shifts/data', {
+                method: 'GET',
+                credentials: 'same-origin',
+                headers: { 'Accept': 'application/json' }
+            });
+            if (!res.ok) return;
+
+            const data = await res.json();
+            const theadRow = table.querySelector('thead tr');
+            const tbodyRow = table.querySelector('tbody tr');
+            if (!theadRow || !tbodyRow) return;
+
+            theadRow.innerHTML = '';
+            tbodyRow.innerHTML = '';
+
+            (data.locations || []).forEach((loc) => {
+                const th = document.createElement('th');
+                th.textContent = loc.name;
+                theadRow.appendChild(th);
+
+                const td = document.createElement('td');
+                td.style.verticalAlign = 'top';
+                td.style.minWidth = '260px';
+
+                const rows = (data.openByLocation && data.openByLocation[String(loc.id)]) || [];
+                if (!rows || rows.length === 0) {
+                    const div = document.createElement('div');
+                    div.className = 'small';
+                    div.textContent = 'No one clocked in';
+                    td.appendChild(div);
+                } else {
+                    const inner = document.createElement('table');
+                    inner.className = 'table';
+                    inner.innerHTML = `
+                        <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Clock-in</th>
+                            <th>Running</th>
+                        </tr>
+                        </thead>
+                        <tbody></tbody>
+                    `;
+                    const innerBody = inner.querySelector('tbody');
+                    rows.forEach((r) => {
+                        const tr = document.createElement('tr');
+                        const employee = document.createElement('td');
+                        employee.textContent = r.employeeName || '';
+
+                        const inTime = document.createElement('td');
+                        inTime.className = 'mono';
+                        inTime.textContent = r.clockInIso || '-';
+
+                        const running = document.createElement('td');
+                        running.className = 'mono';
+                        if (r.clockInEpochMillis !== null && r.clockInEpochMillis !== undefined) {
+                            running.setAttribute('data-clock-in-epoch', String(r.clockInEpochMillis));
+                        }
+                        running.textContent = '00:00:00';
+
+                        tr.appendChild(employee);
+                        tr.appendChild(inTime);
+                        tr.appendChild(running);
+                        innerBody.appendChild(tr);
+                    });
+                    td.appendChild(inner);
+                }
+
+                tbodyRow.appendChild(td);
+            });
+        } catch (e) {
+        }
+    }
+
+    (function initOpenShiftsSse() {
+        if (!window.EventSource) return;
+
+        try {
+            const es = new EventSource('/admin/open-shifts/stream');
+            es.addEventListener('connected', () => refreshOpenShifts());
+            es.addEventListener('open-shifts', () => refreshOpenShifts());
+            es.onerror = () => {
+                // browser will auto-retry; do nothing
+            };
+        } catch (e) {
+        }
+    })();
+
+    function formatHms(totalSeconds) {
+        const s = Math.max(0, Math.floor(totalSeconds));
+        const h = Math.floor(s / 3600);
+        const m = Math.floor((s % 3600) / 60);
+        const r = s % 60;
+        return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`;
+    }
+
+    function formatTime(epochMillis) {
+        if (epochMillis === null || epochMillis === undefined) return '-';
+        try { return new Date(epochMillis).toLocaleString(); } catch (e) { return String(epochMillis); }
+    }
+
+    function renderDashTotals(totals) {
+        const body = document.getElementById('dashWeeklyTotalsBody');
+        body.innerHTML = '';
+
+        if (!totals || totals.length === 0) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td class="small" colspan="3">No hours found for this week.</td>`;
+            body.appendChild(tr);
+            return;
+        }
+
+        totals.forEach((r) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${r.employeeName}</td>
+                <td class="mono">${r.completedTotalFormatted}</td>
+                <td class="mono">${r.liveTotalFormatted}</td>
+            `;
+            body.appendChild(tr);
+        });
+    }
+
+    function renderDashShifts(shifts) {
+        const body = document.getElementById('dashWeeklyShiftsBody');
+        body.innerHTML = '';
+
+        if (!shifts || shifts.length === 0) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td class="small" colspan="6">No shifts found for this week.</td>`;
+            body.appendChild(tr);
+            return;
+        }
+
+        shifts.forEach((s) => {
+            const tr = document.createElement('tr');
+            const status = s.completed ? 'COMPLETED' : 'OPEN';
+            tr.innerHTML = `
+                <td>${s.employeeName}</td>
+                <td class="mono">${s.day}</td>
+                <td class="mono">${formatTime(s.clockInEpochMillis)}</td>
+                <td class="mono">${formatTime(s.clockOutEpochMillis)}</td>
+                <td class="mono">${formatHms(s.workedSeconds)}</td>
+                <td><span class="badge ${s.completed ? 'badge-success' : 'badge-warning'}"><span class="badge-dot"></span>${status}</span></td>
+            `;
+            body.appendChild(tr);
+        });
+    }
+
+    async function refreshDashWeekly() {
+        const url = `/admin/reports/weekly/data?weekStart=${encodeURIComponent(dashWeekStart)}`;
+        try {
+            const res = await fetch(url, {
+                method: 'GET',
+                credentials: 'same-origin',
+                headers: { 'Accept': 'application/json' }
+            });
+            if (!res.ok) {
+                throw new Error(`HTTP ${res.status}`);
+            }
+
+            const ct = (res.headers.get('content-type') || '').toLowerCase();
+            if (!ct.includes('application/json')) {
+                throw new Error('Non-JSON response');
+            }
+
+            const data = await res.json();
+            renderDashTotals(data.totals);
+            renderDashShifts(data.shifts);
+        } catch (e) {
+            const totalsBody = document.getElementById('dashWeeklyTotalsBody');
+            const shiftsBody = document.getElementById('dashWeeklyShiftsBody');
+            totalsBody.innerHTML = `<tr><td class="small" colspan="3">Unable to load weekly totals.</td></tr>`;
+            shiftsBody.innerHTML = `<tr><td class="small" colspan="6">Unable to load shift details (make sure you are logged in as admin).</td></tr>`;
+        }
+    }
+
+    refreshDashWeekly();
+    setInterval(refreshDashWeekly, 5000);
+    /*]]>*/
+</script>
+
+</body>
+</html>

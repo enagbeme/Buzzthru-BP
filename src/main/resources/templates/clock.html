@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Buzzthru/BP - Time Clock</title>
+    <script th:src="@{/app.js}"></script>
+    <link rel="stylesheet" th:href="@{/styles.css}"/>
+</head>
+<body>
+<div class="container">
+    <div class="nav">
+        <div class="brand">
+            <div class="brand-title">Buzzthru/BP</div>
+            <div class="brand-sub" th:text="${locationName} + ' - Time Clock'"></div>
+        </div>
+        <div class="row">
+            <div class="clock-wrap">
+                <div id="serverTime" class="clock-big">--:--:--</div>
+                <div class="clock-sub">Server time</div>
+            </div>
+            <button id="themeToggle" class="btn btn-ghost" type="button" onclick="toggleTheme()">Dark theme</button>
+            <a class="btn btn-ghost" th:href="@{/}">Home</a>
+        </div>
+    </div>
+
+    <div style="height: 16px"></div>
+
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <div class="h1">Currently Clocked In</div>
+                <p class="p">Employees clocked in at this location. Hours run until they clock out.</p>
+            </div>
+            <span class="badge"><span class="badge-dot"></span>Live</span>
+        </div>
+
+        <div th:if="${openEntries == null || #lists.isEmpty(openEntries)}" class="small">No one is clocked in.</div>
+
+        <table th:if="${openEntries != null && !#lists.isEmpty(openEntries)}" class="table">
+            <thead>
+            <tr>
+                <th>Employee</th>
+                <th>Clock-in</th>
+                <th>Hours running</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="t : ${openEntries}">
+                <td th:text="${t.employee.fullName}"></td>
+                <td class="mono" th:text="${t.clockInTime}"></td>
+                <td class="mono" th:attr="data-clock-in-epoch=${t.clockInTime.toEpochMilli()}">00:00:00</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="grid grid-2">
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <div class="h1">Clock In</div>
+                    <p class="p">Enter your PIN and press clock in.</p>
+                </div>
+                <span class="badge badge-success"><span class="badge-dot"></span>Available</span>
+            </div>
+            <div th:if="${clockInMessage}" class="alert" th:text="${clockInMessage}"></div>
+            <div style="height: 10px"></div>
+            <form class="form" method="post" th:action="@{/clock/clock-in}">
+                <div class="field">
+                    <label>PIN</label>
+                    <input name="pin" inputmode="numeric" autocomplete="one-time-code" placeholder="4 digits"/>
+                </div>
+                <button class="btn btn-primary" type="submit">CLOCK IN</button>
+            </form>
+            <div class="footer">After clock-in/out, the screen is ready for the next employee.</div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <div class="h1">Clock Out</div>
+                    <p class="p">Enter your PIN and press clock out.</p>
+                </div>
+                <span class="badge badge-warning"><span class="badge-dot"></span>When finished</span>
+            </div>
+            <div th:if="${clockOutMessage}" class="alert" th:text="${clockOutMessage}"></div>
+            <div class="kv">
+                <div class="k">Status</div>
+                <div class="v">
+                    <span class="badge" th:classappend="${status} == 'CLOCKED_IN' ? ' badge-success' : ''">
+                        <span class="badge-dot"></span>
+                        <span th:text="${status}"></span>
+                    </span>
+                </div>
+            </div>
+            <div class="kv" th:if="${clockedInEmployeeName}">
+                <div class="k">Clocked in employee</div>
+                <div class="v" th:text="${clockedInEmployeeName}"></div>
+            </div>
+            <div class="kv" th:if="${clockInTime}">
+                <div class="k">Clocked in at</div>
+                <div class="v mono" th:text="${clockInTime}"></div>
+            </div>
+            <div class="kv" th:if="${runningTime}">
+                <div class="k">Time running</div>
+                <div class="v mono" th:text="${runningTime}"></div>
+            </div>
+            <div class="kv" th:if="${hoursToday}">
+                <div class="k">Hours today</div>
+                <div class="v mono" th:text="${hoursToday}"></div>
+            </div>
+
+            <div style="height: 10px"></div>
+            <form class="form" method="post" th:action="@{/clock/clock-out}">
+                <div class="field">
+                    <label>PIN</label>
+                    <input name="pin" inputmode="numeric" autocomplete="one-time-code" placeholder="4 digits"/>
+                </div>
+                <button class="btn" type="submit">CLOCK OUT</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    startLiveClock(/*[[${serverEpochMillis}]]*/ 0);
+    /*]]>*/
+</script>
+</body>
+</html>

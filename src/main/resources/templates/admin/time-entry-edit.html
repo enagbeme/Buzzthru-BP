@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Buzzthru/BP - Edit Time Entry</title>
+    <script th:src="@{/app.js}"></script>
+    <link rel="stylesheet" th:href="@{/styles.css}"/>
+</head>
+<body>
+<div class="container">
+    <div class="nav">
+        <div class="brand">
+            <div class="brand-title">Buzzthru/BP</div>
+            <div class="brand-sub" th:text="'Edit Time Entry #' + ${entry.id}"></div>
+        </div>
+        <div class="row">
+            <button id="themeToggle" class="btn btn-ghost" type="button" onclick="toggleTheme()">Dark theme</button>
+            <a class="btn btn-ghost" th:href="@{/admin/time-entries}">Back to Time Entries</a>
+            <form method="post" th:action="@{/admin/logout}" style="margin:0">
+                <button class="btn btn-danger" type="submit">Logout</button>
+            </form>
+        </div>
+    </div>
+
+    <div style="height: 16px"></div>
+
+    <div th:if="${message}" class="alert" th:text="${message}"></div>
+
+    <div style="height: 16px"></div>
+
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <div class="h1">Edit Entry</div>
+                <p class="p">Clock-out must be after clock-in. Reason is required.</p>
+            </div>
+        </div>
+
+        <div class="kv">
+            <div class="k">Employee</div>
+            <div class="v" th:text="${entry.employee.fullName}"></div>
+        </div>
+        <div class="kv">
+            <div class="k">Location</div>
+            <div class="v" th:text="${entry.location.name}"></div>
+        </div>
+        <div class="kv">
+            <div class="k">Device</div>
+            <div class="v" th:text="${entry.device.computerName}"></div>
+        </div>
+
+        <div style="height: 12px"></div>
+
+        <form class="form" method="post" th:action="@{/admin/time-entries/edit}">
+            <input type="hidden" name="id" th:value="${entry.id}"/>
+
+            <div class="field">
+                <label>Clock in (UTC)</label>
+                <input type="datetime-local" name="clockIn" step="60" th:value="${clockInLocal}" required />
+            </div>
+
+            <div class="field">
+                <label>Clock out (UTC) - leave blank if still open</label>
+                <input type="datetime-local" name="clockOut" step="60" th:value="${clockOutLocal}" />
+            </div>
+
+            <div class="field">
+                <label>Reason</label>
+                <input name="reason" placeholder="Fix missed clock-out" required />
+            </div>
+
+            <button class="btn btn-primary" type="submit">Save Changes</button>
+        </form>
+    </div>
+</div>
+</body>
+</html>

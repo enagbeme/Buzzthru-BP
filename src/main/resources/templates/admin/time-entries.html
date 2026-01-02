@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Buzzthru/BP - Time Entries</title>
+    <script th:src="@{/app.js}"></script>
+    <link rel="stylesheet" th:href="@{/styles.css}"/>
+</head>
+<body>
+<div class="container">
+    <div class="nav">
+        <div class="brand">
+            <div class="brand-title">Buzzthru/BP</div>
+            <div class="brand-sub" th:text="'Time Entries | Range: ' + ${fromDate} + ' to ' + ${toDate}"></div>
+        </div>
+        <div class="row">
+            <button id="themeToggle" class="btn btn-ghost" type="button" onclick="toggleTheme()">Dark theme</button>
+            <a class="btn btn-ghost" th:href="@{/admin}">Back to Dashboard</a>
+            <form method="post" th:action="@{/admin/logout}" style="margin:0">
+                <button class="btn btn-danger" type="submit">Logout</button>
+            </form>
+        </div>
+    </div>
+
+    <div style="height: 16px"></div>
+
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <div class="h1">Search</div>
+                <p class="p">Filter by date range. Times are stored in UTC.</p>
+            </div>
+        </div>
+
+        <form class="form" method="get" th:action="@{/admin/time-entries}">
+            <div class="grid grid-2">
+                <div class="field">
+                    <label>From date</label>
+                    <input type="date" name="fromDate" th:value="${fromDate}"/>
+                </div>
+                <div class="field">
+                    <label>To date</label>
+                    <input type="date" name="toDate" th:value="${toDate}"/>
+                </div>
+            </div>
+            <button class="btn" type="submit">Load</button>
+        </form>
+    </div>
+
+    <div style="height: 16px"></div>
+
+    <div th:if="${message}" class="alert" th:text="${message}"></div>
+
+    <div style="height: 16px"></div>
+
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <div class="h1">Entries</div>
+                <p class="p">Edit a time entry to correct clock-in/clock-out.</p>
+            </div>
+        </div>
+
+        <div style="overflow:auto; max-height: 620px;">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Employee</th>
+                    <th>Location</th>
+                    <th>Device</th>
+                    <th>Clock in (UTC)</th>
+                    <th>Clock out (UTC)</th>
+                    <th>Edited</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${entries == null || #lists.isEmpty(entries)}">
+                    <td class="small" colspan="8">No time entries found for this range.</td>
+                </tr>
+                <tr th:each="t : ${entries}">
+                    <td class="mono" th:text="${t.id}"></td>
+                    <td th:text="${t.employee.fullName}"></td>
+                    <td th:text="${t.location.name}"></td>
+                    <td th:text="${t.device.computerName}"></td>
+                    <td class="mono" th:text="${t.clockInTime}"></td>
+                    <td class="mono" th:text="${t.clockOutTime}"></td>
+                    <td>
+                        <span class="badge" th:classappend="${t.edited} ? ' badge-warning' : ''">
+                            <span class="badge-dot"></span>
+                            <span th:text="${t.edited} ? 'Yes' : 'No'"></span>
+                        </span>
+                    </td>
+                    <td>
+                        <a class="btn" th:href="@{/admin/time-entries/edit(id=${t.id})}">Edit</a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</body>
+</html>

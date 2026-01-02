@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Buzzthru/BP - Date Range Report</title>
+    <script th:src="@{/app.js}"></script>
+    <link rel="stylesheet" th:href="@{/styles.css}"/>
+</head>
+<body>
+<div class="container">
+    <div class="nav">
+        <div class="brand">
+            <div class="brand-title">Buzzthru/BP</div>
+            <div class="brand-sub" th:text="'Date Range Report | Range: ' + ${fromDate} + ' to ' + ${toDate}"></div>
+        </div>
+        <div class="row">
+            <button id="themeToggle" class="btn btn-ghost" type="button" onclick="toggleTheme()">Dark theme</button>
+            <a class="btn" th:href="@{/admin/reports/range/pdf(fromDate=${fromDate},toDate=${toDate})}">PDF</a>
+            <a class="btn" th:href="@{/admin/reports/range/csv(fromDate=${fromDate},toDate=${toDate})}">CSV</a>
+            <a class="btn btn-ghost" th:href="@{/admin}">Back</a>
+        </div>
+    </div>
+
+    <div style="height: 16px"></div>
+
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <div class="h1">Totals by Employee</div>
+                <p class="p">Completed excludes open shifts.</p>
+            </div>
+            <span class="badge"><span class="badge-dot"></span>Range</span>
+        </div>
+
+        <form class="form" method="get" th:action="@{/admin/reports/range}">
+            <div class="grid grid-2">
+                <div class="field">
+                    <label>From date</label>
+                    <input type="date" name="fromDate" th:value="${fromDate}"/>
+                </div>
+                <div class="field">
+                    <label>To date</label>
+                    <input type="date" name="toDate" th:value="${toDate}"/>
+                </div>
+            </div>
+            <button class="btn" type="submit">Load Range</button>
+        </form>
+
+        <div style="height: 12px"></div>
+
+        <table class="table">
+            <thead>
+            <tr>
+                <th>Employee</th>
+                <th>Completed (H:MM)</th>
+                <th>Live incl. open (H:MM)</th>
+            </tr>
+            </thead>
+            <tbody id="rangeTotalsBody"></tbody>
+        </table>
+    </div>
+
+    <div style="height: 16px"></div>
+
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <div class="h1">Shift Details</div>
+                <p class="p">Day, clock-in/out, hours worked.</p>
+            </div>
+            <span class="badge"><span class="badge-dot"></span>Live</span>
+        </div>
+
+        <table class="table">
+            <thead>
+            <tr>
+                <th>Employee</th>
+                <th>Day</th>
+                <th>Clock in</th>
+                <th>Clock out</th>
+                <th>Hours</th>
+                <th>Status</th>
+            </tr>
+            </thead>
+            <tbody id="rangeShiftsBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    const fromDate = /*[[${fromDate}]]*/ '';
+    const toDate = /*[[${toDate}]]*/ '';
+
+    function formatHms(totalSeconds) {
+        const s = Math.max(0, Math.floor(totalSeconds));
+        const h = Math.floor(s / 3600);
+        const m = Math.floor((s % 3600) / 60);
+        const r = s % 60;
+        return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`;
+    }
+
+    function formatTime(epochMillis) {
+        if (epochMillis === null || epochMillis === undefined) return '-';
+        try { return new Date(epochMillis).toLocaleString(); } catch (e) { return String(epochMillis); }
+    }
+
+    function renderTotals(totals) {
+        const body = document.getElementById('rangeTotalsBody');
+        body.innerHTML = '';
+        if (!totals || totals.length === 0) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td class="small" colspan="3">No hours found for this range.</td>`;
+            body.appendChild(tr);
+            return;
+        }
+        totals.forEach((r) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${r.employeeName}</td><td class="mono">${r.completedTotalFormatted}</td><td class="mono">${r.liveTotalFormatted}</td>`;
+            body.appendChild(tr);
+        });
+    }
+
+    function renderShifts(shifts) {
+        const body = document.getElementById('rangeShiftsBody');
+        body.innerHTML = '';
+        if (!shifts || shifts.length === 0) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td class="small" colspan="6">No shifts found for this range.</td>`;
+            body.appendChild(tr);
+            return;
+        }
+        shifts.forEach((s) => {
+            const tr = document.createElement('tr');
+            const status = s.completed ? 'COMPLETED' : 'OPEN';
+            tr.innerHTML = `<td>${s.employeeName}</td><td class="mono">${s.day}</td><td class="mono">${formatTime(s.clockInEpochMillis)}</td><td class="mono">${formatTime(s.clockOutEpochMillis)}</td><td class="mono">${formatHms(s.workedSeconds)}</td><td><span class="badge ${s.completed ? 'badge-success' : 'badge-warning'}"><span class="badge-dot"></span>${status}</span></td>`;
+            body.appendChild(tr);
+        });
+    }
+
+    async function refreshRange() {
+        const url = `/admin/reports/range/data?fromDate=${encodeURIComponent(fromDate)}&toDate=${encodeURIComponent(toDate)}`;
+        try {
+            const res = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' } });
+            if (!res.ok) return;
+            const data = await res.json();
+            renderTotals(data.totals);
+            renderShifts(data.shifts);
+        } catch (e) {}
+    }
+
+    refreshRange();
+    setInterval(refreshRange, 5000);
+    /*]]>*/
+</script>
+</body>
+</html>

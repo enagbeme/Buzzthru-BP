@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Admin Login</title>
+    <script th:src="@{/app.js}"></script>
+    <link rel="stylesheet" th:href="@{/styles.css}"/>
+</head>
+<body>
+<div class="container">
+    <div class="nav">
+        <div class="brand">
+            <div class="brand-title">Admin</div>
+            <div class="brand-sub">Secure access</div>
+        </div>
+        <div class="row">
+            <button id="themeToggle" class="btn btn-ghost" type="button" onclick="toggleTheme()">Dark theme</button>
+            <a class="btn btn-ghost" th:href="@{/clock}">Time Clock</a>
+            <a class="btn btn-ghost" th:href="@{/}">Home</a>
+        </div>
+    </div>
+
+    <div style="height: 16px"></div>
+
+    <div class="grid" style="max-width: 520px; margin: 0 auto;">
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <div class="h1">Admin Login</div>
+                    <p class="p">Enter the SUPER_ADMIN PIN to continue.</p>
+                </div>
+                <span class="badge"><span class="badge-dot"></span>PIN</span>
+            </div>
+
+            <div th:if="${param.error}" class="alert alert-danger">Invalid PIN</div>
+            <div th:if="${param.logout}" class="alert alert-success">Logged out</div>
+            <div style="height: 10px"></div>
+
+            <form class="form" method="post" th:action="@{/admin/login}">
+                <input type="hidden" name="username" value="admin"/>
+                <div class="field">
+                    <label>Admin PIN</label>
+                    <input type="password" name="password" inputmode="numeric" autocomplete="one-time-code" placeholder="Enter PIN"/>
+                </div>
+                <button class="btn btn-primary" type="submit">Login</button>
+            </form>
+
+            <div class="footer">If this is a fresh install, check the server console for the initial admin PIN.</div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
