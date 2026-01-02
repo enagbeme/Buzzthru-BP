@@ -93,4 +93,4 @@ Admin Open Shifts uses:
 
 ## License
 
-Proprietary / internal (update as needed).
+This project is licensed under the MIT License.
