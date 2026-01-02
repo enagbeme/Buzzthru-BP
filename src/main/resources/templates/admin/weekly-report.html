@@ -161,8 +161,17 @@
         renderShifts(data.shifts);
     }
 
+    (function initWeeklySse() {
+        if (!window.EventSource) return;
+        try {
+            const es = new EventSource('/admin/open-shifts/stream');
+            es.addEventListener('reports', () => refreshWeekly());
+        } catch (e) {
+        }
+    })();
+
     refreshWeekly();
-    setInterval(refreshWeekly, 5000);
+    setInterval(refreshWeekly, 60000);
     /*]]>*/
 </script>
 </body>

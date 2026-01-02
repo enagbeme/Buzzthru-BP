@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Buzzthru/BP - Devices</title>
+    <script th:src="@{/app.js}"></script>
+    <link rel="stylesheet" th:href="@{/styles.css}"/>
+</head>
+<body>
+<div class="container">
+    <div class="nav">
+        <div class="brand">
+            <div class="brand-title">Buzzthru/BP</div>
+            <div class="brand-sub">Devices</div>
+        </div>
+        <div class="row">
+            <button id="themeToggle" class="btn btn-ghost" type="button" onclick="toggleTheme()">Dark theme</button>
+            <a class="btn btn-ghost" th:href="@{/admin}">Back to Dashboard</a>
+            <form method="post" th:action="@{/admin/logout}" style="margin:0">
+                <button class="btn btn-danger" type="submit">Logout</button>
+            </form>
+        </div>
+    </div>
+
+    <div style="height: 16px"></div>
+
+    <div th:if="${message}" class="alert" th:text="${message}"></div>
+
+    <div style="height: 16px"></div>
+
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <div class="h1">Registered Devices</div>
+                <p class="p">Deactivate a device to prevent clock-in/out from that computer.</p>
+            </div>
+        </div>
+
+        <div style="overflow:auto; max-height: 640px;">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Computer</th>
+                    <th>Location</th>
+                    <th>Device UUID</th>
+                    <th>Registered At</th>
+                    <th>Active</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${devices == null || #lists.isEmpty(devices)}">
+                    <td class="small" colspan="7">No devices found.</td>
+                </tr>
+                <tr th:each="d : ${devices}">
+                    <td class="mono" th:text="${d.id}"></td>
+                    <td th:text="${d.computerName}"></td>
+                    <td th:text="${d.location.name}"></td>
+                    <td class="mono" th:text="${d.deviceUuid}"></td>
+                    <td class="mono" th:text="${d.registeredAt}"></td>
+                    <td>
+                        <span class="badge" th:classappend="${d.active} ? ' badge-success' : ' badge-danger'">
+                            <span class="badge-dot"></span>
+                            <span th:text="${d.active} ? 'Active' : 'Inactive'"></span>
+                        </span>
+                    </td>
+                    <td>
+                        <form method="post" th:action="@{/admin/devices/toggle-active}" style="margin:0">
+                            <input type="hidden" name="deviceId" th:value="${d.id}"/>
+                            <button class="btn" type="submit" th:text="${d.active ? 'Deactivate' : 'Activate'}"></button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -22,7 +22,9 @@
             <button id="themeToggle" class="btn btn-ghost" type="button" onclick="toggleTheme()">Dark theme</button>
             <a class="btn" th:if="${deviceRegistered == false}" th:href="@{/admin/register-device}">Register This Computer</a>
             <button class="btn" th:if="${deviceRegistered == true}" type="button" disabled>Registered</button>
+            <a class="btn btn-ghost" th:href="@{/admin/devices}">Devices</a>
             <a class="btn btn-ghost" th:href="@{/admin/time-entries}">Time Entries</a>
+            <a class="btn btn-ghost" th:href="@{/admin/audit}">Audit</a>
             <a class="btn btn-ghost" th:href="@{/admin/reports/range}">Date Range Report</a>
             <form method="post" th:action="@{/admin/logout}" style="margin:0">
                 <button class="btn btn-danger" type="submit">Logout</button>
@@ -410,6 +412,7 @@
             const es = new EventSource('/admin/open-shifts/stream');
             es.addEventListener('connected', () => refreshOpenShifts());
             es.addEventListener('open-shifts', () => refreshOpenShifts());
+            es.addEventListener('reports', () => refreshDashWeekly());
             es.onerror = () => {
                 // browser will auto-retry; do nothing
             };
@@ -507,7 +510,7 @@
     }
 
     refreshDashWeekly();
-    setInterval(refreshDashWeekly, 5000);
+    setInterval(refreshDashWeekly, 60000);
     /*]]>*/
 </script>
 

@@ -150,8 +150,17 @@
         } catch (e) {}
     }
 
+    (function initRangeSse() {
+        if (!window.EventSource) return;
+        try {
+            const es = new EventSource('/admin/open-shifts/stream');
+            es.addEventListener('reports', () => refreshRange());
+        } catch (e) {
+        }
+    })();
+
     refreshRange();
-    setInterval(refreshRange, 5000);
+    setInterval(refreshRange, 60000);
     /*]]>*/
 </script>
 </body>

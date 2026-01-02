@@ -4,6 +4,7 @@ import com.example.timetracking.model.Device;
 import com.example.timetracking.repo.TimeEntryRepository;
 import com.example.timetracking.service.DeviceCookieService;
 import com.example.timetracking.service.DeviceService;
+import com.example.timetracking.service.PinAttemptService;
 import com.example.timetracking.service.TimeClockService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -31,6 +32,7 @@ public class ClockController {
     private final DeviceService deviceService;
     private final TimeClockService timeClockService;
     private final TimeEntryRepository timeEntryRepository;
+    private final PinAttemptService pinAttemptService;
     private final Clock clock;
 
     @GetMapping("/clock")
@@ -79,10 +81,14 @@ public class ClockController {
 
         Device device = deviceService.requireActiveRegisteredDevice(deviceUuid);
         try {
+            String key = deviceUuid;
+            pinAttemptService.checkAllowed(key);
             var result = timeClockService.clockIn(device, pin);
+            pinAttemptService.recordSuccess(key);
             redirectAttributes.addAttribute("clockInMessage", "Clock-in successful: " + result.employeeName() +
                 " | In: " + formatInstant(result.clockInTime()));
         } catch (RuntimeException ex) {
+            try { pinAttemptService.recordFailure(deviceUuid); } catch (Exception ignored) {}
             redirectAttributes.addAttribute("clockInMessage", ex.getMessage());
         }
         return "redirect:/clock";
@@ -97,13 +103,17 @@ public class ClockController {
 
         Device device = deviceService.requireActiveRegisteredDevice(deviceUuid);
         try {
+            String key = deviceUuid;
+            pinAttemptService.checkAllowed(key);
             var result = timeClockService.clockOut(device, pin);
+            pinAttemptService.recordSuccess(key);
             Duration shift = Duration.between(result.clockInTime(), result.clockOutTime());
             redirectAttributes.addAttribute("clockOutMessage", "Clock-out successful: " + result.employeeName() +
                 " | In: " + formatInstant(result.clockInTime()) +
                 " | Out: " + formatInstant(result.clockOutTime()) +
                 " | Worked: " + formatDuration(shift));
         } catch (RuntimeException ex) {
+            try { pinAttemptService.recordFailure(deviceUuid); } catch (Exception ignored) {}
             redirectAttributes.addAttribute("clockOutMessage", ex.getMessage());
         }
         return "redirect:/clock";

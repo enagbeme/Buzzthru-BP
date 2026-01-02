@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Buzzthru/BP - Audit Log</title>
+    <script th:src="@{/app.js}"></script>
+    <link rel="stylesheet" th:href="@{/styles.css}"/>
+</head>
+<body>
+<div class="container">
+    <div class="nav">
+        <div class="brand">
+            <div class="brand-title">Buzzthru/BP</div>
+            <div class="brand-sub">Audit Log</div>
+        </div>
+        <div class="row">
+            <button id="themeToggle" class="btn btn-ghost" type="button" onclick="toggleTheme()">Dark theme</button>
+            <a class="btn btn-ghost" th:href="@{/admin}">Back to Dashboard</a>
+            <form method="post" th:action="@{/admin/logout}" style="margin:0">
+                <button class="btn btn-danger" type="submit">Logout</button>
+            </form>
+        </div>
+    </div>
+
+    <div style="height: 16px"></div>
+
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <div class="h1">Latest Changes</div>
+                <p class="p">Shows recent edits made to time entries.</p>
+            </div>
+        </div>
+
+        <div style="overflow:auto; max-height: 640px;">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>When</th>
+                    <th>Entry ID</th>
+                    <th>Employee</th>
+                    <th>Location</th>
+                    <th>Field</th>
+                    <th>Old</th>
+                    <th>New</th>
+                    <th>Edited By</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${audits == null || #lists.isEmpty(audits)}">
+                    <td class="small" colspan="8">No audit records found.</td>
+                </tr>
+                <tr th:each="a : ${audits}">
+                    <td class="mono" th:text="${a.editedAt}"></td>
+                    <td class="mono" th:text="${a.timeEntry.id}"></td>
+                    <td th:text="${a.timeEntry.employee.fullName}"></td>
+                    <td th:text="${a.timeEntry.location.name}"></td>
+                    <td class="mono" th:text="${a.fieldName}"></td>
+                    <td class="mono" th:text="${a.oldValue}"></td>
+                    <td class="mono" th:text="${a.newValue}"></td>
+                    <td th:text="${a.editedBy != null ? a.editedBy.fullName : '—'}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</body>
+</html>

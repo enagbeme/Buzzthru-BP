@@ -2,7 +2,9 @@ package com.example.timetracking.web;
 
 import com.example.timetracking.model.Employee;
 import com.example.timetracking.model.TimeEntry;
+import com.example.timetracking.model.TimeEntryAudit;
 import com.example.timetracking.repo.EmployeeRepository;
+import com.example.timetracking.repo.TimeEntryAuditRepository;
 import com.example.timetracking.repo.TimeEntryRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,7 @@ public class AdminTimeEntryController {
 
     private final TimeEntryRepository timeEntryRepository;
     private final EmployeeRepository employeeRepository;
+    private final TimeEntryAuditRepository timeEntryAuditRepository;
 
     private final ZoneId zone = ZoneId.of("UTC");
 
@@ -99,6 +102,10 @@ public class AdminTimeEntryController {
         TimeEntry entry = timeEntryRepository.findByIdWithDetails(id)
             .orElseThrow(() -> new IllegalArgumentException("Time entry not found"));
 
+        Instant oldIn = entry.getClockInTime();
+        Instant oldOut = entry.getClockOutTime();
+        String oldReason = entry.getEditReason();
+
         Instant in = clockIn.atZone(zone).toInstant();
         Instant out = (clockOut == null) ? null : clockOut.atZone(zone).toInstant();
 
@@ -128,8 +135,40 @@ public class AdminTimeEntryController {
             entry.setEditedBy(editor);
         }
 
+        timeEntryRepository.save(entry);
+
+        if (editor != null) {
+            if (!safeEquals(oldIn, in)) {
+                timeEntryAuditRepository.save(audit(entry, editor, "clockInTime", str(oldIn), str(in)));
+            }
+            if (!safeEquals(oldOut, out)) {
+                timeEntryAuditRepository.save(audit(entry, editor, "clockOutTime", str(oldOut), str(out)));
+            }
+            if (!safeEquals(oldReason, reason)) {
+                timeEntryAuditRepository.save(audit(entry, editor, "editReason", oldReason, reason));
+            }
+        }
+
         redirectAttributes.addAttribute("message", "Time entry updated.");
         return "redirect:/admin/time-entries";
+    }
+
+    private TimeEntryAudit audit(TimeEntry entry, Employee editor, String field, String oldVal, String newVal) {
+        TimeEntryAudit a = new TimeEntryAudit();
+        a.setTimeEntry(entry);
+        a.setEditedBy(editor);
+        a.setFieldName(field);
+        a.setOldValue(oldVal);
+        a.setNewValue(newVal);
+        return a;
+    }
+
+    private boolean safeEquals(Object a, Object b) {
+        return a == null ? b == null : a.equals(b);
+    }
+
+    private String str(Instant i) {
+        return i == null ? null : i.toString();
     }
 
     private String toDateTimeLocal(Instant instant) {

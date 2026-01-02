@@ -14,5 +14,6 @@ public class AdminSseBroadcaster {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onTimeClockEvent(TimeClockEvent event) {
         adminSseService.broadcast("open-shifts", "refresh");
+        adminSseService.broadcast("reports", "refresh");
     }
 }
